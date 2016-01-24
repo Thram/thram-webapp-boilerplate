@@ -7,6 +7,7 @@
 'use strict';
 
 var browserify  = require('browserify'),
+    browserSync = require('browser-sync'),
     gulp        = require('gulp'),
     source      = require('vinyl-source-stream'),
     buffer      = require('vinyl-buffer'),
@@ -27,24 +28,16 @@ var browserify  = require('browserify'),
     apidoc      = require('gulp-apidoc'),
     karma       = require('karma').Server;
 
-var config = {
-  paths: {
-    server: './',
-    client: './client',
-    public: './public'
-  }
-};
-
-var isDebug = false;
+var env       = process.env.NODE_ENV || 'development';
+var config    = require(__dirname + '/../config/config.json')[env];
 
 var tasks = {
   client: {
-    clean      : function (cb) {
-      isDebug = !(argv.r || argv.release);
+    clean       : function (cb) {
       return del([config.paths.public + '/*.{js,css,html}', config.paths.public + '/assets'], cb);
     },
     // Layouts
-    layouts    : function () {
+    layouts     : function () {
       return gulp.src(config.paths.client + '/layouts/index.html')
         .pipe(fileInclude({
           template: '<script type="text/template" id="@filename"> @content </script>'
@@ -57,7 +50,7 @@ var tasks = {
         .pipe(gulp.dest(config.paths.public));
     },
     // Scripts
-    scripts    : function () {
+    scripts     : function () {
       // set up the browserify instance on a task basis
       var b = browserify({
         entries: config.paths.client + '/scripts/app.js',
@@ -74,21 +67,21 @@ var tasks = {
         .pipe(gulpif(!(argv.r || argv.release), sourcemaps.write()))
         .pipe(gulp.dest(config.paths.public + '/js/'));
     },
-    vendor     : function () {
+    vendor      : function () {
       return gulp.src(config.paths.client + '/scripts/vendor/**/*.js')
         .pipe(uglify())
         .pipe(rename('vendor.min.js'))
         .pipe(gulp.dest(config.paths.public + '/js/'))
     },
     // Lint Task
-    lint       : function () {
+    lint        : function () {
       return gulp.src([config.paths.client + '/scripts/**/*.js',
           '!' + config.paths.client + '/scripts/vendor/**/*.js'])
         .pipe(jshint({expr: true}))
         .pipe(jshint.reporter('jshint-stylish'));
     },
     // Stylesheets
-    stylesheets: function () {
+    stylesheets : function () {
       return gulp.src(config.paths.client + '/stylesheets/app.scss')
         .pipe(gulpif(!(argv.r || argv.release), sourcemaps.init({loadMaps: true})))
         .pipe(sass({outputStyle: 'compressed'}).on('error', sass.logError))
@@ -97,7 +90,7 @@ var tasks = {
         .pipe(gulp.dest(config.paths.public + '/css/'));
     },
     // Optimize Images
-    optimize   : function () {
+    optimize    : function () {
       return gulp.src(config.paths.client + '/assets/**/*.{gif,jpg,png,svg}')
         .pipe(imagemin({
           progressive      : true,
@@ -108,12 +101,20 @@ var tasks = {
         .pipe(gulp.dest(config.paths.public + '/assets/'));
     },
     // Tests with Jasmine
-    test       : function (done) {
+    test        : function (done) {
       return karma.start({
         configFile: __dirname + '/client/config/karma.conf.js',
         singleRun : !(argv.w || argv.watch)
       }, function (res) {
         done();
+      });
+    },
+    browser_sync: function () {
+      browserSync.init(null, {
+        proxy  : "http://localhost:" + config.server.port,
+        files  : ["public/**/*.*"],
+        browser: "google chrome",
+        port   : 7000
       });
     }
   },
@@ -134,22 +135,23 @@ var tasks = {
         done();
       });
     },
-    start: function () {
+    start: function (cb) {
+      var started = false;
       nodemon({
-        script : config.paths.server + (isDebug ? '/debug.js' : '/release.js'),
-        ext    : 'html js css',
-        execMap: {
-          js: "node --harmony --use_strict"
-        }
+        script: 'server.js'
       })
-        .on('restart', function () {
-          console.log('restarted!')
+        .on('start', function () {
+          if (!started) {
+            cb();
+            console.log('restarted!');
+            started = true;
+          }
         })
     },
     docs : function (done) {
       apidoc({
-        src           : "./controllers",
-        dest          : config.paths.public + "/docs/",
+        src           : "./server",
+        dest          : config.paths.docs,
         debug         : true,
         includeFilters: [".*\\.js$"]
       }, function () {
@@ -174,10 +176,26 @@ var tasks = {
     gulp.watch([src.layouts], ['layouts']);
     gulp.watch([src.scripts], ['lint', 'scripts']);
     gulp.watch([src.stylesheets], ['stylesheets']);
-    //gulp.watch([dist.html, dist.js]).on('change', browserSync.reload);
+    gulp.watch([dist.html, dist.js]).on('change', browserSync.reload);
   }
 
 };
+
+gulp.task('nodemon', function (cb) {
+
+  var started = false;
+
+  return nodemon({
+    script: 'app.js'
+  }).on('start', function () {
+    // to avoid nodemon being started multiple times
+    // thanks @matthisk
+    if (!started) {
+      cb();
+      started = true;
+    }
+  });
+});
 
 // Register Tasks
 gulp.task('clean', tasks.client.clean);
@@ -193,10 +211,11 @@ gulp.task('watch', tasks.watch);
 gulp.task('vendor', tasks.vendor);
 gulp.task('docs', tasks.server.docs);
 gulp.task('start_server', tasks.server.start);
+gulp.task('browser_sync', tasks.client.browser_sync);
 
 gulp.task('client', sync.sync(['stylesheets', 'optimize', 'lint_client', 'vendor', 'scripts', 'layouts']));
 gulp.task('server', sync.sync(['lint_server', 'test_server', 'docs', 'start_server']));
 
 // Build tasks
 gulp.task('default', sync.sync(['clean', 'client', 'server']));
-gulp.task('live', sync.sync(['clean', 'client', 'server']));
+gulp.task('live', sync.sync(['clean', 'client', 'server', 'browser_sync', 'watch']));

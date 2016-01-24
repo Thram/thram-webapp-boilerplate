@@ -10,6 +10,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "browser-sync": "^2.11.1",
     "browserify": "^12.0.1",
     "del": "^2.0.2",
     "gulp": "^3.9.0",
@@ -34,11 +35,20 @@
     "karma-phantomjs-launcher": "^0.2.1",
     "karma-spec-reporter": "0.0.23",
     "phantomjs": "^1.9.19",
+    "sequelize-cli": "^2.3.1",
     "vinyl-buffer": "^1.0.0",
     "vinyl-source-stream": "^1.1.0",
     "yargs": "^3.29.0"
   },
   "dependencies": {
-    "total.js": "^1.9.5"
+    "koa": "^1.1.2",
+    "koa-router": "^5.3.0",
+    "koa-static-folder": "^0.1.6",
+    "lodash": "^4.0.0",
+    "mysql": "^2.10.2",
+    "pg": "^4.4.3",
+    "pg-hstore": "^2.3.2",
+    "sequelize": "^3.18.0",
+    "umzug": "^1.8.0"
   }
 }
