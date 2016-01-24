@@ -7,7 +7,8 @@ module.exports = {
     paths   : {
       server: './',
       client: './client',
-      public: './public'
+      public: './public',
+      docs  : './docs'
     },
     username: "postgres",
     password: null,

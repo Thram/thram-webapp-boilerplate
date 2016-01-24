@@ -7,6 +7,7 @@
 'use strict';
 
 var browserify  = require('browserify'),
+    riotify     = require('riotify'),
     browserSync = require('browser-sync'),
     gulp        = require('gulp'),
     source      = require('vinyl-source-stream'),
@@ -28,24 +29,23 @@ var browserify  = require('browserify'),
     apidoc      = require('gulp-apidoc'),
     karma       = require('karma').Server;
 
-var env       = process.env.NODE_ENV || 'development';
-var config    = require(__dirname + '/../config/config.json')[env];
+var env    = process.env.NODE_ENV || 'development';
+var config = require(__dirname + '/config/config.js')[env];
 
 var tasks = {
   client: {
     clean       : function (cb) {
-      return del([config.paths.public + '/*.{js,css,html}', config.paths.public + '/assets'], cb);
+      return del([config.paths.public + '/*.{js,css,html}', config.paths.public + '/assets', config.paths.docs], cb);
     },
     // Layouts
     layouts     : function () {
-      return gulp.src(config.paths.client + '/layouts/index.html')
+      return gulp.src(config.paths.client + '/index.html')
         .pipe(fileInclude({
           template: '<script type="text/template" id="@filename"> @content </script>'
         }))
         .pipe(htmlreplace({
-          'css'   : 'css/styles.min.css',
-          'vendor': 'js/vendor.min.js',
-          'js'    : 'js/bundle.min.js'
+          'css': 'css/styles.min.css',
+          'js' : 'js/bundle.min.js'
         }))
         .pipe(gulp.dest(config.paths.public));
     },
@@ -57,7 +57,7 @@ var tasks = {
         debug  : !(argv.r || argv.release)
       });
 
-      return b.bundle()
+      return b.transform(riotify).bundle()
         .pipe(source('bundle.min.js'))
         .pipe(buffer())
         .pipe(gulpif(!(argv.r || argv.release), sourcemaps.init({loadMaps: true})))
@@ -150,7 +150,7 @@ var tasks = {
     },
     docs : function (done) {
       apidoc({
-        src           : "./server",
+        src           : "./routes",
         dest          : config.paths.docs,
         debug         : true,
         includeFilters: [".*\\.js$"]
