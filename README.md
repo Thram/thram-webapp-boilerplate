@@ -17,7 +17,7 @@ Happy Coding!
 - Optimize Images
 - Run Tests with Jasmine
 - Include Partials (@@include) or Templates (%%include)
-- Total.JS (https://www.totaljs.com/) Implementation
+- KOA (http://koajs.com/) Implementation
 
 ## Build Commands
 ### Debug Mode
