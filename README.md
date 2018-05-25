@@ -1,4 +1,7 @@
 # Full-Stack Js WebApp Gulp Boilerplate
+
+[![Greenkeeper badge](https://badges.greenkeeper.io/Thram/thram-webapp-boilerplate.svg)](https://greenkeeper.io/)
+
 A nice Gulp Boilerplate for Front-End Development
 ## Setup:
 Just clone the repository or download and run:
